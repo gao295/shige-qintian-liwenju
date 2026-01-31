@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>十个勤天 × 李文菊 | 专属浪漫</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Noto Serif SC', 'STKaiti', 'KaiTi', serif;
+            background: #0f0c29;
+            background: linear-gradient(to bottom, #24243e, #302b63, #0f0c29);
+        }
+        
+        /* 动态背景层 */
+        #bg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+        #bg-canvas.active { opacity: 1; }
+        
+        /* 主画布 */
+        #main-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* UI层 */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        /* 打字机开场诗 */
+        .poem-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #fff;
+            z-index: 20;
+            opacity: 1;
+            transition: opacity 1s;
+            pointer-events: none;
+        }
+        .poem-line {
+            font-size: 1.8em;
+            margin: 20px 0;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 1s forwards;
+            text-shadow: 0 0 20px rgba(255, 105, 180, 0.8);
+            letter-spacing: 3px;
+        }
+        .poem-line:nth-child(1) { animation-delay: 0.5s; }
+        .poem-line:nth-child(2) { animation-delay: 2s; }
+        .poem-line:nth-child(3) { animation-delay: 3.5s; }
+        .poem-line:nth-child(4) { 
+            animation-delay: 5s; 
+            font-size: 2.2em;
+            color: #ffd700;
+            margin-top: 30px;
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .poem-container.hide { opacity: 0; pointer-events: none; }
+        
+        /* 中心李文菊（钻石光效） */
+        .center-name {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            text-align: center;
+            opacity: 0;
+            transition: all 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            z-index: 15;
+        }
+        .center-name.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        .center-name h1 {
+            font-size: 5em;
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 25%, #ffd700 50%, #f5576c 75%, #f093fb 100%);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shine 3s linear infinite, float 6s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.6));
+            letter-spacing: 15px;
+            font-weight: 700;
+        }
+        @keyframes shine {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 400% 50%; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        .center-name .subtitle {
+            color: #fff;
+            font-size: 1.3em;
+            margin-top: 20px;
+            opacity: 0.9;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        
+        /* 成员按钮（玻璃态+光晕） */
+        .member-btn {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.3), inset 0 0 20px rgba(255,255,255,0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: float 4s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
+            pointer-events: auto;
+            z-index: 20;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .member-btn:hover {
+            transform: scale(1.25) rotate(5deg);
+            background: rgba(255, 105, 180, 0.8);
+            box-shadow: 0 0 40px rgba(255, 105, 180, 0.8), 0 0 80px rgba(255, 105, 180, 0.4);
+            border-color: #fff;
+        }
+        .member-btn.clicked {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            color: white;
+            animation: pulse 2s infinite;
+            border-color: #ffd700;
+        }
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(255,105,180,0.3); }
+            to { box-shadow: 0 0 30px rgba(255,105,180,0.6), 0 0 50px rgba(255,215,0,0.3); }
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); }
+            70% { box-shadow: 0 0 0 25px rgba(255, 107, 107, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+        }
+        
+        /* 语录气泡 */
+        .quote-bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 15px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            max-width: 200px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            opacity: 0;
+            transform: scale(0) translateY(10px);
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 25;
+            pointer-events: none;
+            text-align: center;
+            line-height: 1.4;
+        }
+        .quote-bubble.show {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        .quote-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: rgba(255,255,255,0.95) transparent transparent transparent;
+        }
+        
+        /* 提示文字 */
+        .hint {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            color: #ffd700;
+            font-size: 1.2em;
+            text-shadow: 0 0 20px rgba(255,215,0,0.8);
+            pointer-events: none;
+            transition: opacity 0.5s;
+            z-index: 15;
+            letter-spacing: 2px;
+        }
+        #start-hint { 
+            bottom: 15%; 
+            animation: heartbeat 2s infinite;
+            font-size: 1.4em;
+        }
+        #progress-hint { 
+            top: 10%; 
+            opacity: 0; 
+            font-size: 1.2em;
+            color: #fff;
+            background: rgba(255,105,180,0.3);
+            backdrop-filter: blur(5px);
+            padding: 10px 30px;
+            border-radius: 30px;
+            width: auto;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #progress-hint.show { opacity: 1; }
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        
+        /* 彩蛋层（照片墙） */
+        #easter-egg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 1s;
+            padding: 20px;
+        }
+        #easter-egg.show {
+            display: flex;
+            opacity: 1;
+        }
+        .photo-gallery {
+            position: relative;
+            width: 90%;
+            max-width: 600px;
+            background: linear-gradient(45deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            transform: rotate(-2deg);
+            animation: photoFloat 6s ease-in-out infinite;
+        }
+        @keyframes photoFloat {
+            0%, 100% { transform: rotate(-2deg) translateY(0); }
+            50% { transform: rotate(2deg) translateY(-10px); }
+        }
+        .photo-frame {
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: #fff;
+        }
+        .photo-frame img {
+            width: 100%;
+            height: auto;
+            display: block;
+            filter: contrast(1.05) saturate(1.1);
+        }
+        .photo-caption {
+            text-align: center;
+            margin-top: 15px;
+            color: #333;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .wish-text {
+            margin-top: 30px;
+            font-size: 2.5em;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255,215,0,0.8), 0 0 60px rgba(255,105,180,0.5);
+            animation: fadeInScale 1s ease;
+            text-align: center;
+            line-height: 1.3;
+        }
+        @keyframes fadeInScale {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .close-btn {
+            margin-top: 30px;
+            padding: 15px 50px;
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2em;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 10px 30px rgba(240, 147, 251, 0.4);
+            transition: all 0.3s;
+            pointer-events: auto;
+        }
+        .close-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(240, 147, 251, 0.6);
+        }
+        
+        /* 彩带画布 */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99;
+        }
+        
+        @media (max-width: 600px) {
+            .poem-line { font-size: 1.4em; }
+            .center-name h1 { font-size: 3em; letter-spacing: 8px; }
+            .member-btn { width: 65px; height: 65px; font-size: 0.8em; }
+            .wish-text { font-size: 1.8em; }
+            .quote-bubble { max-width: 150px; font-size: 0.8em; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 彩带层 -->
+<canvas id="confetti-canvas"></canvas>
+
+<!-- 动态背景层 -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- 主花瓣画布 -->
+<canvas id="main-canvas"></canvas>
+
+<!-- UI层 -->
+<div id="ui-layer">
+    <!-- 开场诗 -->
+    <div class="poem-container" id="poem">
+        <div class="poem-line">春风十里，不如你</div>
+        <div class="poem-line">十个勤天，只为一人</div>
+        <div class="poem-line">今日此刻，星辰为你而亮</div>
+        <div class="poem-line">送给全世界最好的李文菊 💎</div>
+    </div>
+    
+    <div class="hint" id="start-hint" style="opacity:0; pointer-events:none;">点击屏幕，开启浪漫心形 💕</div>
+    <div class="hint" id="progress-hint">✨ 已收集祝福：0 / 10</div>
+    
+    <div class="center-name" id="centerName">
+        <h1>李文菊</h1>
+        <div class="subtitle">十个勤天 全员宠爱</div>
+    </div>
+    
+    <div id="members-container"></div>
+</div>
+
+<!-- 彩蛋 -->
+<div id="easter-egg">
+    <div class="photo-gallery">
+        <div class="photo-frame">
+            <img src="img/group.jpg" alt="十个勤天合照" onerror="this.parentNode.innerHTML='<div style=\'padding:100px 20px;text-align:center;color:#999;\'>十个勤天合照<br>请放入 img/group.jpg</div>';">
+        </div>
+        <div class="photo-caption">今天的你也辛苦啦！</div>
+    </div>
+    <div class="wish-text">十个勤天祝你<br>永远快乐！🌾</div>
+    <button class="close-btn" onclick="closeEasterEgg()">收下这份温暖</button>
+</div>
+
+<script>
+// 成员配置（含语录从音频提取）
+const members = [
+    { name: '蒋敦豪', id: 'jiang', file: 'audio/jiang.mp3', quote: '要敢开口，被拒绝了再说！' },
+    { name: '鹭卓', id: 'lu', file: 'audio/lu.mp3', quote: '真心是我的人生准则，心甘情愿付出每一次真心' },
+    { name: '李耕耘', id: 'ligengyun', file: 'audio/ligengyun.mp3', quote: '想的话全是问题，做的话全是答案' },
+    { name: '李昊', id: 'lihao', file: 'audio/lihao.mp3', quote: '太阳下山不等人，想到了就马上去做！' },
+    { name: '赵一博', id: 'zhaoyibo', file: 'audio/zhaoyibo.mp3', quote: '人生不会白干，只要做了一件事，就一定会有不一样的惊喜' },
+    { name: '卓沅', id: 'zhuoyuan', file: 'audio/zhuoyuan.mp3', quote: '一定不要迷茫，未来还很长，18岁感叹人生完蛋，24岁却拥有了梦寐以求的生活' },
+    { name: '赵小童', id: 'zhaoxiaotong', file: 'audio/zhaoxiaotong.mp3', quote: '深深的话我们浅浅地说，长长的路我们一起慢慢地走' },
+    { name: '何浩楠', id: 'hehaonan', file: 'audio/hehaonan.mp3', quote: '开心最重要！不管外界有什么声音，开心就是要不用管，天天开心！' },
+    { name: '陈少熙', id: 'chenshaoxi', file: 'audio/chenshaoxi.mp3', quote: '人生不就是白干加白干嘛？没事，习惯了' },
+    { name: '王一珩', id: 'wangyiheng', file: 'audio/wangyiheng.mp3', quote: '不管外面世界多嘈杂，都与我们无关，我们只做好自己的事情' }
+];
+
+const groupAudioFile = 'audio/group.mp3';
+
+let w = window.innerWidth, h = window.innerHeight;
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx = bgCanvas.getContext('2d');
+const mainCanvas = document.getElementById('main-canvas');
+const ctx = mainCanvas.getContext('2d');
+const confettiCanvas = document.getElementById('confetti-canvas');
+const confettiCtx = confettiCanvas.getContext('2d');
+
+[bgCanvas, mainCanvas, confettiCanvas].forEach(c => {
+    c.width = w; c.height = h;
+});
+
+let phase = 'poem'; // poem -> start -> forming -> main -> complete
+let mainParticles = [], bgStars = [], confettiParticles = [];
+let clickedMembers = new Set();
+let audioContext = null;
+
+// 语录气泡管理
+let currentBubble = null;
+
+// 彩带粒子类
+class Confetti {
+    constructor() {
+        this.x = Math.random() * w;
+        this.y = -20;
+        this.size = Math.random() * 10 + 5;
+        this.speedY = Math.random() * 3 + 2;
+        this.speedX = Math.random() * 2 - 1;
+        this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
+        this.rotation = Math.random() * 360;
+        this.rotationSpeed = Math.random() * 10 - 5;
+    }
+    update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        this.rotation += this.rotationSpeed;
+        if (this.y > h) {
+            this.y = -20;
+            this.x = Math.random() * w;
+        }
+    }
+    draw() {
+        confettiCtx.save();
+        confettiCtx.translate(this.x, this.y);
+        confettiCtx.rotate(this.rotation * Math.PI / 180);
+        confettiCtx.fillStyle = this.color;
+        confettiCtx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+        confettiCtx.restore();
+    }
+}
+
+// 主花瓣类（发光版）
+class Petal {
+    constructor() {
+        this.reset();
+        this.targetX = null;
+        this.targetY = null;
+    }
+    reset() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.size = Math.random() * 12 + 6;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = (Math.random() - 0.5) * 2;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.spin = (Math.random() - 0.5) * 0.03;
+        const hues = [320, 330, 340, 350, 10, 20];
+        this.hue = hues[Math.floor(Math.random() * hues.length)];
+        this.alpha = Math.random() * 0.4 + 0.6;
+    }
+    update() {
+        if (phase === 'start' || phase === 'poem') {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.rotation += this.spin;
+            if (this.x < -60) this.x = w + 60;
+            if (this.x > w + 60) this.x = -60;
+            if (this.y < -60) this.y = h + 60;
+            if (this.y > h + 60) this.y = -60;
+        } else if (phase === 'forming' && this.targetX !== null) {
+            this.x += (this.targetX - this.x) * 0.035;
+            this.y += (this.targetY - this.y) * 0.035;
+            this.rotation += 0.02;
+            if (this.hue < 340) this.hue += 0.5;
+        } else if (phase === 'main' || phase === 'complete') {
+            if (this.targetX !== null) {
+                const breath = 1 + Math.sin(Date.now() * 0.002) * 0.02;
+                const dx = this.targetX - w/2;
+                const dy = this.targetY - h/2;
+                this.x = w/2 + dx * breath;
+                this.y = h/2 + dy * breath;
+            }
+        }
+    }
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.globalAlpha = this.alpha;
+        
+        // 发光效果
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = `hsla(${this.hue}, 100%, 60%, 0.8)`;
+        ctx.fillStyle = `hsla(${this.hue}, 90%, 75%, 0.95)`;
+        
+        const s = this.size;
+        ctx.beginPath();
+        ctx.moveTo(0, -s);
+        ctx.bezierCurveTo(s*1.5, -s*2, s*2.5, -s, 0, s*1.5);
+        ctx.bezierCurveTo(-s*2.5, -s, -s*1.5, -s*2, 0, -s);
+        ctx.fill();
+        
+        //  centersr高光
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(-s*0.3, -s*0.5, s*0.3, s*0.2, 0.5, 0, Math.PI*2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
+}
+
+// 背景星星
+class Star {
+    constructor() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.size = Math.random() * 2 + 0.5;
+        this.alpha = Math.random();
+    }
+    update() {
+        this.alpha += Math.sin(Date.now() * 0.001 + this.x) * 0.01;
+        if (this.alpha < 0) this.alpha = 0;
+        if (this.alpha > 1) this.alpha = 1;
+    }
+    draw() {
+        bgCtx.save();
+        bgCtx.globalAlpha = this.alpha;
+        bgCtx.fillStyle = '#fff';
+        bgCtx.shadowBlur = 10;
+        bgCtx.shadowColor = '#fff';
+        bgCtx.beginPath();
+        bgCtx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+        bgCtx.fill();
+        bgCtx.restore();
+    }
+}
+
+// 初始化
+function init() {
+    for(let i=0; i<150; i++) mainParticles.push(new Petal());
+    for(let i=0; i<100; i++) bgStars.push(new Star());
+}
+
+function calculateHeart() {
+    const cx = w/2, cy = h/2;
+    const scale = Math.min(w, h) / 30;
+    mainParticles.forEach((p, i) => {
+        const t = (i/150) * Math.PI * 2;
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t));
+        p.targetX = cx + x*scale;
+        p.targetY = cy + y*scale;
+    });
+}
+
+function createButtons() {
+    const container = document.getElementById('members-container');
+    const cx = w/2, cy = h/2;
+    const r = Math.min(w, h) * 0.4;
+    
+    // 清除旧按钮和气泡
+    container.innerHTML = '';
+    if (currentBubble) {
+        currentBubble.remove();
+        currentBubble = null;
+    }
+    
+    members.forEach((m, i) => {
+        const angle = (i/10) * Math.PI * 2 - Math.PI/2;
+        const x = cx + Math.cos(angle)*r - 40;
+        const y = cy + Math.sin(angle)*r - 40;
+        
+        const btn = document.createElement('div');
+        btn.className = 'member-btn';
+        btn.innerText = m.name;
+        btn.style.left = x + 'px';
+        btn.style.top = y + 'px';
+        btn.style.animationDelay = (i*0.1) + 's';
+        
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            if (clickedMembers.has(m.id)) {
+                showQuote(m, x, y);
+                return;
+            }
+            
+            // 播放音频
+            const audio = new Audio(m.file);
+            audio.volume = 0.9;
+            audio.play().catch(e => console.log('音频播放:', e));
+            
+            // 显示语录气泡
+            showQuote(m, x, y);
+            
+            clickedMembers.add(m.id);
+            btn.classList.add('clicked');
+            
+            document.getElementById('progress-hint').innerText = `✨ 已收集祝福：${clickedMembers.size} / 10`;
+            
+            if (clickedMembers.size === 10) {
+                setTimeout(() => {
+                    triggerEasterEgg();
+                }, 2000);
+            }
+        };
+        
+        container.appendChild(btn);
+    });
+}
+
+function showQuote(member, x, y) {
+    // 移除旧气泡
+    if (currentBubble) {
+        currentBubble.classList.remove('show');
+        setTimeout(() => currentBubble.remove(), 500);
+    }
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'quote-bubble';
+    bubble.innerText = `「${member.quote}」— ${member.name}`;
+    bubble.style.left = (x - 60) + 'px'; // 居中偏移
+    bubble.style.top = (y - 100) + 'px';
+    document.getElementById('ui-layer').appendChild(bubble);
+    currentBubble = bubble;
+    
+    setTimeout(() => bubble.classList.add('show'), 10);
+    setTimeout(() => {
+        bubble.classList.remove('show');
+        setTimeout(() => {
+            if (bubble === currentBubble) {
+                bubble.remove();
+                currentBubble = null;
+            }
+        }, 500);
+    }, 4000);
+}
+
+function triggerEasterEgg() {
+    phase = 'complete';
+    
+    // 播放全员音频
+    const groupAudio = new Audio(groupAudioFile);
+    groupAudio.volume = 0.9;
+    groupAudio.play().catch(e => console.log('彩蛋音频:', e));
+    
+    // 显示彩蛋
+    document.getElementById('easter-egg').classList.add('show');
+    
+    // 启动彩带
+    for(let i=0; i<100; i++) confettiParticles.push(new Confetti());
+}
+
+function closeEasterEgg() {
+    document.getElementById('easter-egg').classList.remove('show');
+    // 停止彩带
+    confettiParticles = [];
+    confettiCtx.clearRect(0, 0, w, h);
+}
+
+// 动画循环
+function animate() {
+    // 背景渐变（主阶段后）
+    if (phase === 'main' || phase === 'complete') {
+        const time = Date.now() * 0.0002;
+        const g = bgCtx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w);
+        g.addColorStop(0, `hsl(${330 + Math.sin(time)*30}, 70%, 20%)`);
+        g.addColorStop(0.5, `hsl(${280 + Math.cos(time)*20}, 60%, 15%)`);
+        g.addColorStop(1, '#0f0c29');
+        bgCtx.fillStyle = g;
+        bgCtx.fillRect(0, 0, w, h);
+        
+        bgStars.forEach(s => { s.update(); s.draw(); });
+    }
+    
+    // 主花瓣
+    ctx.clearRect(0, 0, w, h);
+    mainParticles.forEach(p => { p.update(); p.draw(); });
+    
+    // 彩带（彩蛋阶段）
+    if (phase === 'complete' && confettiParticles.length > 0) {
+        confettiCtx.clearRect(0, 0, w, h);
+        confettiParticles.forEach(c => { c.update(); c.draw(); });
+    }
+    
+    requestAnimationFrame(animate);
+}
+
+// 事件监听
+document.body.addEventListener('click', (e) => {
+    if (phase === 'poem') {
+        // 跳过或加速诗歌
+        document.getElementById('poem').classList.add('hide');
+        setTimeout(() => {
+            phase = 'start';
+            document.getElementById('start-hint').style.opacity = '1';
+            document.getElementById('start-hint').style.pointerEvents = 'auto';
+        }, 1000);
+        return;
+    }
+    
+    if (phase !== 'start') return;
+    if (e.target.classList.contains('member-btn')) return;
+    if (e.target.classList.contains('close-btn')) return;
+    
+    phase = 'forming';
+    document.getElementById('start-hint').style.opacity = '0';
+    calculateHeart();
+    
+    setTimeout(() => {
+        phase = 'main';
+        document.getElementById('bg-canvas').classList.add('active');
+        document.getElementById('centerName').classList.add('show');
+        document.getElementById('progress-hint').classList.add('show');
+        createButtons();
+    }, 3000);
+});
+
+window.addEventListener('resize', () => {
+    w = window.innerWidth; h = window.innerHeight;
+    [bgCanvas, mainCanvas, confettiCanvas].forEach(c => {
+        c.width = w; c.height = h;
+    });
+    if (phase === 'main') {
+        calculateHeart();
+        createButtons();
+    }
+});
+
+// 诗歌自动进入
+setTimeout(() => {
+    if (phase === 'poem') {
+        document.getElementById('poem').classList.add('hide');
+        setTimeout(() => {
+            phase = 'start';
+            document.getElementById('start-hint').style.opacity = '1';
+        }, 1000);
+    }
+}, 8000);
+
+init();
+animate();
+</script>
+</body>
+</html>
